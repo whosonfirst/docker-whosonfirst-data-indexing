@@ -1,0 +1,174 @@
+#!/bin/sh
+# -*-sh-*-
+
+GETOPT=`which getopt`
+GIT=`which git`
+
+BIN="/usr/bin"
+
+ES_HOST="NEEDS-CLI-FLAG"
+ES_PORT="NEEDS-CLI-FLAG"
+ES_INDEX="NEEDS-CLI-FLAG"
+
+S3_DSN="NEEDS-CLI-FLAG"
+
+# see notes below - by default we assume this will be set as an environment variable at least
+# until I sort out IAM-only/password-less logins for MySQL... (20190208/thisisaaronland)
+
+MYSQL_CONFIG=""
+
+GH_ORG="NEEDS-CLI-FLAG"
+
+DATA="/usr/local/data"
+DRYRUN=""
+ALL=""
+
+ARGS=`${GETOPT} t:d:r:m:hfan $*`
+set -- $ARGS
+
+for i; do
+    case "$i" in
+        -h  ) 
+	      USAGE=1
+	      shift; shift;;
+	-t  ) TARGET=$2
+	      shift; shift ;;
+	-d  ) DATA=$2
+	      shift; shift ;;
+	-r  ) REPOS_CUSTOM=$2
+	      shift; shift ;;
+	-m  ) MYSQL_CONFIG=$2
+	      shift; shift ;;	
+	-a  ) ALL=1
+	      shift; shift ;;
+	-n  ) DRYRUN=1
+	      shift; shift ;;	
+	--  ) shift; break ;;
+    esac
+done
+
+if [ "${USAGE}" = "1" ]
+then
+    echo "usage: ./index-data -options"
+    echo "options:"
+    echo "...please write me"
+    exit 0
+fi
+
+LIST_REPOS="${BIN}/wof-list-repos"
+S3_SYNC="${BIN}/wof-s3-sync"
+MYSQL_INDEX="${BIN}/wof-mysql-index"
+ES_INDEX_TOOL="${BIN}/wof-es-index"	# this can't be ported to Go soon enough... (20190122/thisisaaronland)
+
+# ensure tools here...
+
+TO_INDEX=""
+REPOS=""
+
+# TO DO: add hooks to pass/track --since flag (20190122/thisisaaronland)
+
+if [ "${REPOS_CUSTOM}" != "" ]
+then   
+    REPOS=${REPOS_CUSTOM}
+else
+    REPOS=`${LIST_REPOS} -org ${GH_ORG}`
+fi
+
+if [ "${REPOS}" = "" ]
+then
+    echo "Nothing to index"
+    exit 1
+fi
+
+for REPO_NAME in ${REPOS}
+do
+
+    cd ${DATA}
+
+    ${GIT} clone https://github.com/${GH_ORG}/${REPO_NAME}.git
+    
+    REPO_PATH="${DATA}/${REPO_NAME}"
+    cd ${REPO_PATH}
+
+    MODE="filelist"
+    INDEX="${REPO_PATH}/index.txt"
+
+    # as of this writing most (all...) of the time savings doing it this way is targeted at
+    # flights and because of the way we are exporting them (flights) – which involves using a
+    # two-pass export, first in go and then again using the more-complete python exporter 
+    # basically a pure-go port of the py-mapzen-whosonfirst-export code can't happen soon
+    # enough but until then all of the effeciencies here depend on exporting flights with
+    # something like this (where utils/python/export.py is bundled with the flights repo):
+    #
+    # git status --porcelain --untracked-files=all | egrep '.geojson' | awk '{ print $$2 }' > new.txt
+    # python utils/python/export.py -r . -f new.txt
+    # rm new.txt
+    #
+    # (20190123/thisisaaronland)
+
+    if [ "${ALL}" = "1" ]
+    then
+	MODE="repo"
+	INDEX="${REPO_PATH}"
+    else
+	${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX}
+    fi
+
+    echo "index ${REPO_PATH} in '${MODE}' mode, reading from ${INDEX}"
+
+    if [ "${TARGET}" = "prod" ]
+    then
+
+	echo ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${MODE} ${INDEX}
+	
+	if [ "${DRYRUN}" = "" ]
+	then
+	    ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${MODE} ${INDEX}
+	fi
+	
+    fi
+
+
+    echo ${MYSQL_INDEX} -config ${MYSQL_CONFIG} -mode ${MODE} ${INDEX}
+
+    if [ "${DRYRUN}" = "" ]
+    then
+	
+	# see what's going on here? if MYSQL_CONFIG (-m) is empty we're going
+	# to assume that wof-mysql-index -dsn flag is being set from the
+	# WOF_MYSQL_DSN environment variable (20190208/thisisaaronland)
+
+	# https://github.com/whosonfirst/go-whosonfirst-mysql/blob/master/cmd/wof-mysql-index.go#L51-L68
+
+	if [ "${MYSQL_CONFIG}" = "" ]
+	then
+
+	    # see the way we're passing -all which is normally read from
+	    # the config file? yeah, that (20190208/thisisaaronland)
+
+	    ${MYSQL_INDEX} -timings -all -mode ${MODE} ${INDEX}
+	else
+	    ${MYSQL_INDEX} -config ${MYSQL_CONFIG} -mode ${MODE} ${INDEX}
+	fi
+	
+    fi
+
+    echo ${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} --mode ${MODE} ${INDEX}
+    
+    if [ "${DRYRUN}" = "" ]
+    then
+	${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} -m ${MODE} ${INDEX}
+    fi
+    
+    if [ "${ALL}" != "1" ]
+    then
+	rm ${INDEX}
+    fi
+
+    # maybe this someday... (20190225/thisisaaronland)
+    # https://github.com/whosonfirst/go-whosonfirst-internetarchive/blob/master/cmd/wayback.go
+    
+    cd -
+    rm -rf ${REPO_PATH}
+    
+done
