@@ -1,6 +1,9 @@
 #!/bin/sh
 # -*-sh-*-
 
+echo "Y U RUN ME YET"
+exit 1
+
 GETOPT=`which getopt`
 GIT=`which git`
 
