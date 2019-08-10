@@ -168,9 +168,6 @@ do
 	rm ${INDEX}
     fi
 
-    # maybe this someday... (20190225/thisisaaronland)
-    # https://github.com/whosonfirst/go-whosonfirst-internetarchive/blob/master/cmd/wayback.go
-    
     cd -
     rm -rf ${REPO_PATH}
     
