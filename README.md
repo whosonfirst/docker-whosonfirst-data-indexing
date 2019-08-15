@@ -12,11 +12,45 @@ You will need to make sure you have a role with the following (default) AWS poli
 
 In addition you will need the following custom policies:
 
-* TBD...
+Something that allows you to read/write to S3, for example:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::data.whosonfirst.org"
+            ]
+        },
+        {
+            "Action": [
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:DeleteObject",
+                "s3:GetObject"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::data.whosonfirst.org/*"
+            ]
+        }
+    ]
+}
+```
 
 ### Security groups
 
 Create a new `whosonfirst-data-indexing` security and disallow _all_ inbound ports.
+
+### Security groups (external)
+
+You'll also need to allow the security group you've just created above (`sg-{SECURITY_GROUP}`) to access port `9200` on the host/endpoint running Elasticsearch. The details of setting up and configuring the Elasticsearch endpoint are out of scope for this document.
 
 ## Lambda
 
