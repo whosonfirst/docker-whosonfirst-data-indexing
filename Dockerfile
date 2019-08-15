@@ -51,7 +51,9 @@ ARG MYSQL_CONFIG
 # the old-skool no-v-prefix release format? Yeah, that... (20190810/straup)
 
 RUN apk update && apk upgrade \
-    && apk add git make gcc libc-dev ca-certificates py-pip \
+    && apk add git make gcc libc-dev ca-certificates py-pip curl \
+    #
+    && pip install awscli \
     #
     && mkdir /build \
     #
@@ -81,3 +83,4 @@ COPY --from=gotools /usr/local/bin/wof-s3-sync /usr/local/bin/wof-s3-sync
 COPY --from=gotools /usr/local/bin/wof-mysql-index /usr/local/bin/wof-mysql-index
 
 COPY bin/wof-test-index /usr/local/bin/
+COPY bin/wof-test-permissions /usr/local/bin/
