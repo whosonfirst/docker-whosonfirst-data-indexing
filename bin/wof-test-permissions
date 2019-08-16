@@ -35,7 +35,7 @@ fi
 
 echo "# test Elasticsearch"
 
-curl ${ES_HOST}:${ES_PORT}
+curl -s ${ES_HOST}:${ES_PORT}
 
 echo "# test S3"
 
