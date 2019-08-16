@@ -6,27 +6,19 @@ exit 1
 
 GETOPT=`which getopt`
 GIT=`which git`
+S3_SYNC=`which wof-s3-sync`
+ES_INDEX_TOOL=`which wof-es-index`	# this can't be ported to Go soon enough... (20190122/thisisaaronland)
 
-BIN="/usr/bin"
+ES_CONFIG="localhost:9200:index"
+S3_DSN=""
 
-ES_HOST="NEEDS-CLI-FLAG"
-ES_PORT="NEEDS-CLI-FLAG"
-ES_INDEX="NEEDS-CLI-FLAG"
-
-S3_DSN="NEEDS-CLI-FLAG"
-
-# see notes below - by default we assume this will be set as an environment variable at least
-# until I sort out IAM-only/password-less logins for MySQL... (20190208/thisisaaronland)
-
-MYSQL_CONFIG=""
-
-GH_ORG="NEEDS-CLI-FLAG"
+GITHUB_ORG="whosonfirst-data"
 
 DATA="/usr/local/data"
 DRYRUN=""
 ALL=""
 
-ARGS=`${GETOPT} t:d:r:m:hfan $*`
+ARGS=`${GETOPT} t:d:e:s:g:han $*`
 set -- $ARGS
 
 for i; do
@@ -38,10 +30,12 @@ for i; do
 	      shift; shift ;;
 	-d  ) DATA=$2
 	      shift; shift ;;
-	-r  ) REPOS_CUSTOM=$2
-	      shift; shift ;;
-	-m  ) MYSQL_CONFIG=$2
-	      shift; shift ;;	
+	-e  ) ES_CONFIG=$2
+	      shift; shift;;
+	-s  ) S3_DSN=$2
+	      shift; shift;;
+	-g  ) GITHUB_ORG=$2
+	      shift; shift;;
 	-a  ) ALL=1
 	      shift; shift ;;
 	-n  ) DRYRUN=1
@@ -58,43 +52,24 @@ then
     exit 0
 fi
 
-LIST_REPOS="${BIN}/wof-list-repos"
-S3_SYNC="${BIN}/wof-s3-sync"
-MYSQL_INDEX="${BIN}/wof-mysql-index"
-ES_INDEX_TOOL="${BIN}/wof-es-index"	# this can't be ported to Go soon enough... (20190122/thisisaaronland)
+ES_HOST=`echo ${ES_CONFIG} | awk -F ':' '{ print $1 }`
+ES_PORT=`echo ${ES_CONFIG} | awk -F ':' '{ print $2 }`
+ES_INDEX=`echo ${ES_CONFIG} | awk -F ':' '{ print $3 }`
 
-# ensure tools here...
-
-TO_INDEX=""
-REPOS=""
-
-# TO DO: add hooks to pass/track --since flag (20190122/thisisaaronland)
-
-if [ "${REPOS_CUSTOM}" != "" ]
-then   
-    REPOS=${REPOS_CUSTOM}
-else
-    REPOS=`${LIST_REPOS} -org ${GH_ORG}`
-fi
-
-if [ "${REPOS}" = "" ]
-then
-    echo "Nothing to index"
-    exit 1
-fi
+# basic sanity checking on ES_ and S3_DSN variables here
 
 for REPO_NAME in ${REPOS}
 do
 
     cd ${DATA}
 
-    ${GIT} clone https://github.com/${GH_ORG}/${REPO_NAME}.git
+    ${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git
     
     REPO_PATH="${DATA}/${REPO_NAME}"
     cd ${REPO_PATH}
 
-    MODE="filelist"
-    INDEX="${REPO_PATH}/index.txt"
+    INDEX_MODE="filelist"
+    INDEX_PATH="${REPO_PATH}/index.txt"
 
     # as of this writing most (all...) of the time savings doing it this way is targeted at
     # flights and because of the way we are exporting them (flights) – which involves using a
@@ -111,61 +86,31 @@ do
 
     if [ "${ALL}" = "1" ]
     then
-	MODE="repo"
-	INDEX="${REPO_PATH}"
+	INDEX_MODE="repo"
+	INDEX_PATH="${REPO_PATH}"
     else
-	${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX}
+	${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX_PATH}
     fi
 
-    echo "index ${REPO_PATH} in '${MODE}' mode, reading from ${INDEX}"
+    echo "index ${REPO_PATH} in '${INDEX_MODE}' mode, reading from ${INDEX_PATH}"
 
-    if [ "${TARGET}" = "prod" ]
-    then
-
-	echo ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${MODE} ${INDEX}
+    echo ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${INDEX_MODE} ${INDEX_PATH}
 	
-	if [ "${DRYRUN}" = "" ]
-	then
-	    ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${MODE} ${INDEX}
-	fi
-	
-    fi
-
-
-    echo ${MYSQL_INDEX} -config ${MYSQL_CONFIG} -mode ${MODE} ${INDEX}
-
     if [ "${DRYRUN}" = "" ]
     then
-	
-	# see what's going on here? if MYSQL_CONFIG (-m) is empty we're going
-	# to assume that wof-mysql-index -dsn flag is being set from the
-	# WOF_MYSQL_DSN environment variable (20190208/thisisaaronland)
-
-	# https://github.com/whosonfirst/go-whosonfirst-mysql/blob/master/cmd/wof-mysql-index.go#L51-L68
-
-	if [ "${MYSQL_CONFIG}" = "" ]
-	then
-
-	    # see the way we're passing -all which is normally read from
-	    # the config file? yeah, that (20190208/thisisaaronland)
-
-	    ${MYSQL_INDEX} -timings -all -mode ${MODE} ${INDEX}
-	else
-	    ${MYSQL_INDEX} -config ${MYSQL_CONFIG} -mode ${MODE} ${INDEX}
-	fi
-	
+	${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${INDEX_MODE} ${INDEX_PATH}
     fi
-
-    echo ${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} --mode ${MODE} ${INDEX}
+    
+    echo ${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} --mode ${INDEX_MODE} ${INDEX_PATH}
     
     if [ "${DRYRUN}" = "" ]
     then
-	${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} -m ${MODE} ${INDEX}
+	${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} -m ${INDEX_MODE} ${INDEX_PATH}
     fi
     
-    if [ "${ALL}" != "1" ]
+    if [ -f ${INDEX_PATH} ]
     then
-	rm ${INDEX}
+	rm ${INDEX_PATH}
     fi
 
     cd -
