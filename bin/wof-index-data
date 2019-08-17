@@ -1,15 +1,14 @@
 #!/bin/sh
 # -*-sh-*-
 
-echo "Y U RUN ME YET"
-exit 1
+# /usr/local/bin/wof-index-data,-s,'credentials=iam: region=us-east-1 bucket=data.whosonfirst.org',-e,https://172.31.26.200#9200#spelunker,-n,-a,whosonfirst-data-admin-gr
 
 GETOPT=`which getopt`
 GIT=`which git`
 S3_SYNC=`which wof-s3-sync`
 ES_INDEX_TOOL=`which wof-es-index`	# this can't be ported to Go soon enough... (20190122/thisisaaronland)
 
-ES_CONFIG="localhost:9200:index"
+ES_CONFIG="localhost#9200#index"
 S3_DSN=""
 
 GITHUB_ORG="whosonfirst-data"
@@ -18,7 +17,7 @@ DATA="/usr/local/data"
 DRYRUN=""
 ALL=""
 
-ARGS=`${GETOPT} t:d:e:s:g:han $*`
+ARGS=`${GETOPT} t:d:e:s:g:a:n:h $*`
 set -- $ARGS
 
 for i; do
@@ -37,10 +36,10 @@ for i; do
 	-g  ) GITHUB_ORG=$2
 	      shift; shift;;
 	-a  ) ALL=1
-	      shift; shift ;;
+	      shift;;
 	-n  ) DRYRUN=1
 	      shift; shift ;;	
-	--  ) shift; break ;;
+	--  ) shift $((OPTIND -1)); break ;;
     esac
 done
 
@@ -52,18 +51,31 @@ then
     exit 0
 fi
 
-ES_HOST=`echo ${ES_CONFIG} | awk -F ':' '{ print $1 }`
-ES_PORT=`echo ${ES_CONFIG} | awk -F ':' '{ print $2 }`
-ES_INDEX=`echo ${ES_CONFIG} | awk -F ':' '{ print $3 }`
+ES_HOST=`echo ${ES_CONFIG} | awk -F '#' '{ print $1 }'`
+ES_PORT=`echo ${ES_CONFIG} | awk -F '#:' '{ print $2 }'`
+ES_INDEX=`echo ${ES_CONFIG} | awk -F '#' '{ print $3 }'`
 
 # basic sanity checking on ES_ and S3_DSN variables here
 
-for REPO_NAME in ${REPOS}
+echo "ES HOST: '${ES_HOST}'"
+echo "ES PORT: '${ES_PORT}'"
+echo "ES INDEX: '${ES_INDEX}'"
+echo "S3 DSN: '${S3_DSN}'"
+
+TO_INDEX=$@
+
+for REPO_NAME in $TO_INDEX
 do
 
     cd ${DATA}
 
     ${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git
+
+    if [ $? -ne 0 ]
+    then
+	echo "Failed to clone ${REPO_NAME}"
+	continue
+    fi
     
     REPO_PATH="${DATA}/${REPO_NAME}"
     cd ${REPO_PATH}

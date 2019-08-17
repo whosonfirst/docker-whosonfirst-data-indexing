@@ -82,5 +82,5 @@ COPY --from=gotools /usr/local/bin/wof-list-repos /usr/local/bin/wof-list-repos
 COPY --from=gotools /usr/local/bin/wof-s3-sync /usr/local/bin/wof-s3-sync
 COPY --from=gotools /usr/local/bin/wof-mysql-index /usr/local/bin/wof-mysql-index
 
-COPY bin/wof-test-index /usr/local/bin/
+COPY bin/wof-index-data /usr/local/bin/
 COPY bin/wof-test-permissions /usr/local/bin/
