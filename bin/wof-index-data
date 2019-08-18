@@ -71,14 +71,19 @@ echo "S3 DSN: '${S3_DSN}'"
 echo "DRYRUN: '${DRYRUN}'"
 echo "INDEX ALL: '${ALL}'"
 
+mkdir -p /usr/local/data
+
 for REPO_NAME in $TO_INDEX
 do
 
     cd ${DATA}
 
-    echo "${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git"
+    # see the --depth 2 part? that's important / it means we don't fetch the entire
+    # history but just enough to do `git log HEAD^..HEAD` below (20190818/straup)
     
-    ${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git
+    echo "${GIT} clone --depth 2 https://github.com/${GITHUB_ORG}/${REPO_NAME}.git"
+    
+    ${GIT} clone --depth 2 https://github.com/${GITHUB_ORG}/${REPO_NAME}.git
 
     if [ $? -ne 0 ]
     then
@@ -110,16 +115,32 @@ do
 	INDEX_MODE="repo"
 	INDEX_PATH="${REPO_PATH}"
     else
+	
 	${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX_PATH}
+
+	if [ $? -ne 0 ]
+	then
+	    echo "Failed to generate ${INDEX_PATH}"
+
+	    cd -
+	    rm -rf ${REPO_PATH}
+	    continue
+	fi
+
+	COUNT_LINES=`wc -l ${INDEX_PATH}`
+	echo "RECORDS TO PROCESS: ${COUNT_LINES}"
+	
     fi
 
     echo "index ${REPO_PATH} in '${INDEX_MODE}' mode, reading from ${INDEX_PATH}"
 
-    echo ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${INDEX_MODE} ${INDEX_PATH}
+    # running wof-s3-sync with -verbose enabled produces _way_ to much stuff in an ECS context
+    
+    echo ${S3_SYNC} -dsn "${S3_DSN}" -mode ${INDEX_MODE} ${INDEX_PATH}
 	
     if [ "${DRYRUN}" = "" ]
     then
-	${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${INDEX_MODE} ${INDEX_PATH}
+	${S3_SYNC} -dsn "${S3_DSN}" -mode ${INDEX_MODE} ${INDEX_PATH}
     fi
     
     echo ${ES_INDEX_TOOL} -b -c 1500 --host ${ES_HOST} --port ${ES_PORT} --index ${ES_INDEX} --mode ${INDEX_MODE} ${INDEX_PATH}
