@@ -115,8 +115,10 @@ do
 	INDEX_MODE="repo"
 	INDEX_PATH="${REPO_PATH}"
     else
+
+	echo "${GIT} log --name-only --pretty=format:'' HEAD^..HEAD | grep geojson > ${INDEX_PATH}"
 	
-	${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX_PATH}
+	${GIT} log --name-only --pretty=format:'' HEAD^..HEAD | grep geojson > ${INDEX_PATH}
 
 	if [ $? -ne 0 ]
 	then
