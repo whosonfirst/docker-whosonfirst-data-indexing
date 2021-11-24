@@ -10,7 +10,7 @@ These tools were originally written to expect CLI options. Most of these flags h
 
 Basically, there are enough different flags and enough details that shouldn't be kept in source control that the CLI flag approach has become a burden. For example all the details used to invoke an ECS task (container name, cluster name, security group, subnet(s), etc.)
 
-An alternative approach using `.env` files (which are excluded from source control) to pull in defaults at runtime. For example:
+Instead, we are using an alternative approach to pull in `.env` files with defaults at runtime. These files are explicitly excluded from source control. For example:
 
 ```
 PYTHON=`which python`
