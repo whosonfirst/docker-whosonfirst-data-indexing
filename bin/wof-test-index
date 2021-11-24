@@ -1,6 +1,0 @@
-#!/bin/sh
-
-for REPO in $@
-do
-	echo "wof-test-index ${REPO}"
-done
