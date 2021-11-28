@@ -46,7 +46,7 @@ FROM alpine
 RUN mkdir /usr/local/data
 
 RUN apk update && apk upgrade \
-    && apk add git py-pip ca-certificates jq \
+    && apk add git python3 py-pip ca-certificates jq \
     #
     && pip install awscli
 

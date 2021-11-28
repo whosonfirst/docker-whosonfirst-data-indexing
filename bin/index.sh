@@ -5,9 +5,9 @@
 # in order to make this work in Docker, specifically Alpine which required '${FOO} = "BAR"' rather
 # than '${FOO}="BAR"' which doesn't seem to work on dev (centOS)... computers, amirite?
 
-PYTHON=`which python`
+PYTHON=`which python3`
 
-WHOAMI=`${PYTHON} -c 'import os, sys; print os.path.realpath(sys.argv[1])' $0`
+WHOAMI=`${PYTHON} -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' $0`
 FNAME=`basename $WHOAMI`
 BIN=`dirname $WHOAMI`
 
@@ -127,7 +127,7 @@ REPOS=""
 
 if [ "${GITHUB_TOKEN}" != "" ]
 then
-    GITHUB_TOKEN=`${BIN}/runtimevar '${GITHUB_TOKEN}`
+    GITHUB_TOKEN=`${BIN}/runtimevar '${GITHUB_TOKEN}'`
 fi
 
 if [ "${REPOS_CUSTOM}" != "" ]
