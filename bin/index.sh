@@ -1,15 +1,11 @@
 #!/bin/sh
 # -*-sh-*-
 
-# Note to self - this might need to be conditional based on the operating system (alpine, centos)
-# in order to make this work in Docker, specifically Alpine which required '${FOO} = "BAR"' rather
-# than '${FOO}="BAR"' which doesn't seem to work on dev (centOS)... computers, amirite?
-
 PYTHON=`which python3`
 
 WHOAMI=`${PYTHON} -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' $0`
 FNAME=`basename $WHOAMI`
-BIN=`dirname $WHOAMI`
+ROOT=`dirname $WHOAMI`
 
 OS=`uname -s | tr '[:upper:]' '[:lower:]'`
 
@@ -17,9 +13,9 @@ GIT=`which git`
 BIN="/usr/bin"
 
 # Pull in defaults from .env file
-if [ -f ${BIN}/${FNAME}.env ]
+if [ -f ${ROOT}/${FNAME}.env ]
 then
-    source ${BIN}/${FNAME}.env
+    source ${ROOT}/${FNAME}.env
 fi
 
 if [ "${INDEX_ALL}" = "1" ]
@@ -158,11 +154,11 @@ do
     then
 	echo "Do not clone flag enabled. Assuming that ${REPO_PATH} already exists."
     else 
-	echo "${GIT} clone https://GITHUB_TOKEN@github.com/${GITHUB_ORG}/${REPO_NAME}.git ${REPO_PATH}"
+	echo "${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git ${REPO_PATH}"
 
 	if [ "${DRYRUN}" = "" ]
 	then
-	    ${GIT} clone https://${GITHUB_TOKEN}@github.com/${GITHUB_ORG}/${REPO_NAME}.git ${REPO_PATH}
+	    ${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git ${REPO_PATH}
 	fi
     fi
 
