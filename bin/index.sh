@@ -115,7 +115,8 @@ S3_SYNC="${BIN}/wof-s3-sync"
 
 MYSQL_INDEX="${BIN}/wof-mysql-index"
 
-ES_INDEX_TOOL="${BIN}/es-whosonfirst-index"
+# Note the "es2-" which is necessary until we migrate the Spelunker over to ES 7.x
+ES_INDEX_TOOL="${BIN}/es2-whosonfirst-index"
 
 # ensure tools exist here...
 

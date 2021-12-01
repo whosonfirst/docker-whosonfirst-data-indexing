@@ -32,7 +32,8 @@ RUN apk update && apk upgrade \
     && cd /build \
     && git clone https://github.com/sfomuseum/go-whosonfirst-elasticsearch.git \
     && cd go-whosonfirst-elasticsearch \
-    && go build -mod vendor -o /usr/local/bin/es-whosonfirst-index cmd/es-whosonfirst-index/main.go \    
+    && go build -mod vendor -o /usr/local/bin/es-whosonfirst-index cmd/es-whosonfirst-index/main.go \
+    && go build -mod vendor -o /usr/local/bin/es2-whosonfirst-index cmd/es2-whosonfirst-index/main.go \        
     #
     && cd /build \
     && git clone https://github.com/sfomuseum/runtimevar.git \    
@@ -55,6 +56,7 @@ COPY --from=gotools /usr/local/bin/wof-clone-repos /usr/bin
 COPY --from=gotools /usr/local/bin/wof-s3-sync /usr/bin
 COPY --from=gotools /usr/local/bin/wof-mysql-index /usr/bin
 COPY --from=gotools /usr/local/bin/es-whosonfirst-index /usr/bin
+COPY --from=gotools /usr/local/bin/es2-whosonfirst-index /usr/bin
 COPY --from=gotools /usr/local/bin/runtimevar /usr/bin
 
 COPY bin/index.sh /usr/local/bin/
