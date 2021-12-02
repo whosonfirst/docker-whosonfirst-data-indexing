@@ -95,6 +95,9 @@ then
 	echo "Missing or empty -i Elasticsearch index flag."
 	exit 1
     fi
+
+    ES_TEST=`curl -v -s ${ES_HOST}/_aliases`
+    echo "ES TEST ${ES_TEST}"
 fi
 
 if [ "${INDEX_MYSQL}" = "1" ]
