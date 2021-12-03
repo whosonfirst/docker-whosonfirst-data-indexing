@@ -168,7 +168,7 @@ do
 
 	if [ "${DRYRUN}" = "" ]
 	then
-	    ${GIT} clone https://github.com/${GITHUB_ORG}/${REPO_NAME}.git ${REPO_PATH}
+	    ${GIT} clone --depth 1 https://github.com/${GITHUB_ORG}/${REPO_NAME}.git ${REPO_PATH}
 	fi
     fi
 
