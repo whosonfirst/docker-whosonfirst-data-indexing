@@ -1,0 +1,41 @@
+# https://github.com/whosonfirst/docker-whosonfirst-data-indexing/issues/4
+
+# https://github.com/whosonfirst/go-whosonfirst-github
+# https://github.com/aaronland/go-aws-ecs
+
+# first build Go tools
+
+FROM golang:1.17-alpine as gotools
+
+RUN mkdir /build
+
+RUN apk update && apk upgrade \
+    && apk add git make gcc libc-dev \
+    #
+    && cd /build \
+    && git clone https://github.com/whosonfirst/go-whosonfirst-github.git \
+    && cd go-whosonfirst-github \
+    && go build -mod vendor -o /usr/local/bin/wof-clone-repos cmd/wof-clone-repos/main.go \
+    && go build -mod vendor -o /usr/local/bin/wof-list-repos cmd/wof-list-repos/main.go \           
+    #
+    && cd /build \
+    && git clone https://github.com/aaronland/go-aws-ecs.git \
+    && cd go-aws-ecs \       	
+    && go build -mod vendor -o /usr/local/bin/esc-launch-task cmd/ecs-launch-task/main.go \
+    #
+    && cd && rm -rf /build 
+    
+FROM alpine
+
+RUN mkdir /usr/local/data
+
+RUN apk update && apk upgrade \
+    && apk add git python3 py-pip ca-certificates jq curl \
+    #
+    && pip install awscli
+
+COPY --from=gotools /usr/local/bin/wof-list-repos /usr/bin
+COPY --from=gotools /usr/local/bin/esc-launch-task /usr/bin
+
+# COPY bin/index.sh /usr/local/bin/
+# COPY bin/index.sh.env /usr/local/bin/
