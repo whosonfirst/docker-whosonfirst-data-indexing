@@ -5,4 +5,4 @@ docker-force:
 	docker build --no-cache -t whosonfirst-data-indexing .
 
 docker-updates:
-	docker build -t whosonfirst-data-indexing-updates -f Dockerfile.updates .
+	docker build --no-cache -t whosonfirst-data-indexing-updates -f Dockerfile.updates .

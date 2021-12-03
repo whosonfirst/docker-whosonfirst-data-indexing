@@ -21,7 +21,7 @@ RUN apk update && apk upgrade \
     && cd /build \
     && git clone https://github.com/aaronland/go-aws-ecs.git \
     && cd go-aws-ecs \       	
-    && go build -mod vendor -o /usr/local/bin/esc-launch-task cmd/ecs-launch-task/main.go \
+    && go build -mod vendor -o /usr/local/bin/ecs-launch-task cmd/ecs-launch-task/main.go \
     #
     && cd && rm -rf /build 
     
@@ -30,12 +30,10 @@ FROM alpine
 RUN mkdir /usr/local/data
 
 RUN apk update && apk upgrade \
-    && apk add git python3 py-pip ca-certificates jq curl \
-    #
-    && pip install awscli
+    && apk add python3 ca-certificates 
 
 COPY --from=gotools /usr/local/bin/wof-list-repos /usr/bin
-COPY --from=gotools /usr/local/bin/esc-launch-task /usr/bin
+COPY --from=gotools /usr/local/bin/ecs-launch-task /usr/bin
 
-# COPY bin/index.sh /usr/local/bin/
-# COPY bin/index.sh.env /usr/local/bin/
+COPY bin/update.sh /usr/local/bin/
+COPY bin/update.sh.env /usr/local/bin/

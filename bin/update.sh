@@ -16,15 +16,14 @@ then
     source ${ROOT}/${FNAME}.env
 fi
 
+echo ${BIN}/wof-list-repos -org whosonfirst-data -prefix whosonfirst-data -updated-since ${UPDATED_SINCE}
 REPOS=`${BIN}/wof-list-repos -org whosonfirst-data -prefix whosonfirst-data -updated-since ${UPDATED_SINCE}`
 
 for REPO in ${REPOS}
 do
 
-    echo "Invoke ${ECS_TASK} for ${REPO}
+    echo "Invoke ${ECS_TASK} for ${REPO}"
 
-    ${BIN}/ecs-launch-task -dsn ${ECS_DSN} -task ${ECS_TASK} -container ${ECS_CONTAINER} -cluster ${ECS_CLUSTER} -launch-type FARGATE -public-ip ENABLED -security-group ${ECS_SECURITY_GROUP} -subnet ${ECS_SUBNET} ${ECS_COMMAND} ${REPO}
+    ${BIN}/ecs-launch-task -dsn "${ECS_DSN}" -task ${ECS_TASK} -container ${ECS_CONTAINER} -cluster ${ECS_CLUSTER} -launch-type FARGATE -public-ip ENABLED -security-group ${ECS_SECURITY_GROUP} -subnet ${ECS_SUBNET} ${ECS_COMMAND} ${REPO}
     
 done
-
-
