@@ -24,6 +24,8 @@ do
 
     echo "Invoke ${ECS_TASK} for ${REPO}"
 
-    ${BIN}/ecs-launch-task -dsn "${ECS_DSN}" -task ${ECS_TASK} -container ${ECS_CONTAINER} -cluster ${ECS_CLUSTER} -launch-type FARGATE -public-ip ENABLED -security-group ${ECS_SECURITY_GROUP} -subnet ${ECS_SUBNET} ${ECS_COMMAND} ${REPO}
+    # echo ${BIN}/ecs-launch-task -dsn 'credentials=iam: region=us-east-1' -task ${ECS_TASK} -container ${ECS_CONTAINER} -cluster ${ECS_CLUSTER} -launch-type FARGATE -public-ip ENABLED -security-group ${ECS_SECURITY_GROUP} -subnet ${ECS_SUBNET} ${ECS_COMMAND} ${REPO}
+    
+    ${BIN}/ecs-launch-task -dsn 'credentials=iam: region=us-east-1' -task ${ECS_TASK} -container ${ECS_CONTAINER} -cluster ${ECS_CLUSTER} -launch-type FARGATE -public-ip ENABLED -security-group ${ECS_SECURITY_GROUP} -subnet ${ECS_SUBNET} ${ECS_COMMAND} ${REPO}
     
 done
