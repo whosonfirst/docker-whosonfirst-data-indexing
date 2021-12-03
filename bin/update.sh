@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# https://github.com/whosonfirst/docker-whosonfirst-data-indexing/issues/4
+
 PYTHON=`which python3`
 
 WHOAMI=`${PYTHON} -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' $0`

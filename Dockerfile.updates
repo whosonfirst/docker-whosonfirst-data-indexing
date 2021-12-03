@@ -1,4 +1,11 @@
 # https://github.com/whosonfirst/docker-whosonfirst-data-indexing/issues/4
+# https://github.com/aaronland/go-aws-ecs/issues/2
+#
+# This could easily have been built as a Lambda function to launch ECS tasks
+# but since, in the near-future, we will want to be able to launch tasks with
+# the ability to wait until they are completed that means we'll inevitably
+# exceed the maximum Lambda exection time so it's easier just to assume a long
+# running container from the start.
 
 # https://github.com/whosonfirst/go-whosonfirst-github
 # https://github.com/aaronland/go-aws-ecs
