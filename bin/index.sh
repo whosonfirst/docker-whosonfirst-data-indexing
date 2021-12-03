@@ -96,8 +96,14 @@ then
 	exit 1
     fi
 
-    ES_TEST=`curl -v -s ${ES_HOST}/_aliases`
-    echo "ES TEST ${ES_TEST}"
+    # This used to test the response value but shell scripting and the endless
+    # build/compile/configure process of ECS containers compels me to assume it
+    # will work as expected or, if not, at least provide some hint of what's going
+    # on (20211203/straup)
+    
+    ES_TEST=`curl -s -I ${ES_HOST} | grep '200 OK'`
+    echo "ES test : ${ES_TEST}"
+
 fi
 
 if [ "${INDEX_MYSQL}" = "1" ]
