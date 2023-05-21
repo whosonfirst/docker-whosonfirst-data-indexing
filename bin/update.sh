@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This could – and should – be replaced by a single application written in Go which could
+# be run from the command line or as a Lambda function invoked as an EventBridge action.
+
 # https://github.com/whosonfirst/docker-whosonfirst-data-indexing/issues/4
 
 PYTHON=`which python3`
