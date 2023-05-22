@@ -4,20 +4,27 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
-	
+
 	"github.com/aaronland/go-aws-ecs"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/sfomuseum/go-flags/multi"
 	"github.com/sfomuseum/iso8601duration"
+	// "github.com/sfomuseum/runtimevar"
 	"github.com/whosonfirst/go-whosonfirst-github/organizations"
 )
 
 func main() {
 
 	var mode string
+
 	var github_org string
+	var github_prefix multi.MultiCSVString
+	var github_access_token_uri string
+	var github_updated_since string
+
 	var aws_session_uri string
 
 	var ecs_task string
@@ -26,17 +33,21 @@ func main() {
 	var ecs_launch_type string
 	var ecs_platform string
 	var ecs_public_ip string
+	var ecs_task_command string
 
-	var ecs_subnets multi.MultiString
-	var ecs_security_groups multi.MultiString
+	var ecs_subnets multi.MultiCSVString
+	var ecs_security_groups multi.MultiCSVString
 
-	var updated_since string
-	
 	fs := flagset.NewFlagSet("update")
 
-	fs.StringVar(&mode, "mode", "cli", "")
-	fs.StringVar(&github_org, "github-organization", "whosonfirst-data", "")
-	fs.StringVar(&aws_session_uri, "aws-session-uri", "", "")
+	fs.StringVar(&mode, "mode", "cli", "Valid options are: cli, lambda")
+
+	fs.StringVar(&github_org, "github-organization", "whosonfirst-data", "The GitHub organization to poll for recently updated repositories.")
+	fs.Var(&github_prefix, "github-prefix", "")
+	fs.StringVar(&github_access_token_uri, "github-access-token-uri", "", "A valid gocloud.dev/runtimevar URI that dereferences to a GitHub API access token.")
+	fs.StringVar(&github_updated_since, "github-updated-since", "PT24H", "A valid ISO-8601 duration string.")
+
+	fs.StringVar(&aws_session_uri, "aws-session-uri", "", "A valid aaronland/go-aws-session URI string.")
 
 	fs.StringVar(&ecs_task, "ecs-task", "", "The name (and version) of your ECS task.")
 	fs.StringVar(&ecs_container, "ecs-container", "", "The name of your ECS container.")
@@ -44,22 +55,11 @@ func main() {
 	fs.StringVar(&ecs_launch_type, "ecs-launch-type", "", "A valid ECS launch type.")
 	fs.StringVar(&ecs_platform, "ecs-platform-version", "", "A valid ECS platform version.")
 	fs.StringVar(&ecs_public_ip, "ecs-public-ip", "", "A valid ECS public IP string.")
-
 	fs.Var(&ecs_subnets, "ecs-subnet", "One or more subnets to run your ECS task in.")
 	fs.Var(&ecs_security_groups, "ecs-security-group", "A valid AWS security group to run your task under.")
 
-	fs.StringVar(&updated_since, "updated-since", "", "")
-	
+	fs.StringVar(&ecs_task_command, "ecs-task-command", "/bin/update.sh -R -r {repo}", "")
 	flagset.Parse(fs)
-
-	d, err := duration.FromString(updated_since)
-	
-	if err != nil {
-		log.Fatalf("Failed to parse '%s', %w", updated_since, err)
-	}
-	
-	now := time.Now()
-	since := now.Add(-d.ToDuration())
 
 	svc, err := ecs.NewService(aws_session_uri)
 
@@ -79,8 +79,34 @@ func main() {
 	}
 
 	list_opts := organizations.NewDefaultListOptions()
-	// list_opts.Prefix = "whosonfirst-data"
+
+	d, err := duration.FromString(github_updated_since)
+
+	if err != nil {
+		log.Fatalf("Failed to parse '%s', %w", github_updated_since, err)
+	}
+
+	now := time.Now()
+	since := now.Add(-d.ToDuration())
+
 	list_opts.PushedSince = &since
+
+	if len(github_prefix) > 0 {
+		list_opts.Prefix = github_prefix
+	}
+
+	/*
+		if github_access_token_uri != "" {
+
+			access_token, err := runtimevar.String(ctx, github_access_token_uri)
+
+			if err != nil {
+				log.Fatalf("Failed to deference github access token URI, %w", err)
+			}
+
+			list_opts.AccessToken = access_token
+		}
+	*/
 
 	updateFunc := func(ctx context.Context) error {
 
@@ -92,14 +118,13 @@ func main() {
 
 		for _, name := range repos {
 
-			task_cmd := []string{
-				"/usr/local/bin/index.sh",
-				"-R",
-				"-r",
-				name,
-			}
+			task_cmd := strings.Replace(ecs_task_command, "{repo}", name, -1)
+			cmd := strings.Split(task_cmd, " ")
 
-			_, err := ecs.LaunchTask(ctx, svc, task_opts, task_cmd...)
+			log.Println(task_opts, cmd)
+			continue
+
+			_, err := ecs.LaunchTask(ctx, svc, task_opts, cmd...)
 
 			if err != nil {
 				return fmt.Errorf("Failed to launch ECS task for %s, %w", name, err)
