@@ -12,7 +12,7 @@ import (
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/sfomuseum/go-flags/multi"
 	"github.com/sfomuseum/iso8601duration"
-	 "github.com/sfomuseum/runtimevar"
+	"github.com/sfomuseum/runtimevar"
 	"github.com/whosonfirst/go-whosonfirst-github/organizations"
 )
 
@@ -43,7 +43,7 @@ func main() {
 	fs.StringVar(&mode, "mode", "cli", "Valid options are: cli, lambda")
 
 	fs.StringVar(&github_org, "github-organization", "whosonfirst-data", "The GitHub organization to poll for recently updated repositories.")
-	fs.Var(&github_prefix, "github-prefix", "")
+	fs.Var(&github_prefix, "github-prefix", "Zero or more prefixes to filter repositories by (must match).")
 	fs.StringVar(&github_access_token_uri, "github-access-token-uri", "", "A valid gocloud.dev/runtimevar URI that dereferences to a GitHub API access token.")
 	fs.StringVar(&github_updated_since, "github-updated-since", "PT24H", "A valid ISO-8601 duration string.")
 
@@ -66,9 +66,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to set flags from environment variables, %w", err)
 	}
-	
+
 	ctx := context.Background()
-	
+
 	svc, err := ecs.NewService(aws_session_uri)
 
 	if err != nil {
@@ -103,16 +103,16 @@ func main() {
 		list_opts.Prefix = github_prefix
 	}
 
-		if github_access_token_uri != "" {
+	if github_access_token_uri != "" {
 
-			access_token, err := runtimevar.StringVar(ctx, github_access_token_uri)
+		access_token, err := runtimevar.StringVar(ctx, github_access_token_uri)
 
-			if err != nil {
-				log.Fatalf("Failed to deference github access token URI, %w", err)
-			}
-
-			list_opts.AccessToken = access_token
+		if err != nil {
+			log.Fatalf("Failed to deference github access token URI, %w", err)
 		}
+
+		list_opts.AccessToken = access_token
+	}
 
 	updateFunc := func(ctx context.Context) error {
 
