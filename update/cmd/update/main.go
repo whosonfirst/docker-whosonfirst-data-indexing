@@ -12,7 +12,7 @@ import (
 	"github.com/sfomuseum/go-flags/flagset"
 	"github.com/sfomuseum/go-flags/multi"
 	"github.com/sfomuseum/iso8601duration"
-	// "github.com/sfomuseum/runtimevar"
+	 "github.com/sfomuseum/runtimevar"
 	"github.com/whosonfirst/go-whosonfirst-github/organizations"
 )
 
@@ -61,6 +61,14 @@ func main() {
 	fs.StringVar(&ecs_task_command, "ecs-task-command", "/bin/update.sh -R -r {repo}", "")
 	flagset.Parse(fs)
 
+	err := flagset.SetFlagsFromEnvVars(fs, "WHOSONFIRST")
+
+	if err != nil {
+		log.Fatalf("Failed to set flags from environment variables, %w", err)
+	}
+	
+	ctx := context.Background()
+	
 	svc, err := ecs.NewService(aws_session_uri)
 
 	if err != nil {
@@ -95,10 +103,9 @@ func main() {
 		list_opts.Prefix = github_prefix
 	}
 
-	/*
 		if github_access_token_uri != "" {
 
-			access_token, err := runtimevar.String(ctx, github_access_token_uri)
+			access_token, err := runtimevar.StringVar(ctx, github_access_token_uri)
 
 			if err != nil {
 				log.Fatalf("Failed to deference github access token URI, %w", err)
@@ -106,7 +113,6 @@ func main() {
 
 			list_opts.AccessToken = access_token
 		}
-	*/
 
 	updateFunc := func(ctx context.Context) error {
 
@@ -137,7 +143,6 @@ func main() {
 	switch mode {
 	case "cli":
 
-		ctx := context.Background()
 		err := updateFunc(ctx)
 
 		if err != nil {
