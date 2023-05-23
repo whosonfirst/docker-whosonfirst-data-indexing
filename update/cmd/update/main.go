@@ -34,10 +34,11 @@ func main() {
 	var ecs_platform string
 	var ecs_public_ip string
 	var ecs_task_command string
-
 	var ecs_subnets multi.MultiCSVString
 	var ecs_security_groups multi.MultiCSVString
 
+	var dryrun bool
+	
 	fs := flagset.NewFlagSet("update")
 
 	fs.StringVar(&mode, "mode", "cli", "Valid options are: cli, lambda")
@@ -52,13 +53,14 @@ func main() {
 	fs.StringVar(&ecs_task, "ecs-task", "", "The name (and version) of your ECS task.")
 	fs.StringVar(&ecs_container, "ecs-container", "", "The name of your ECS container.")
 	fs.StringVar(&ecs_cluster, "ecs-cluster", "", "The name of your ECS cluster.")
-	fs.StringVar(&ecs_launch_type, "ecs-launch-type", "", "A valid ECS launch type.")
-	fs.StringVar(&ecs_platform, "ecs-platform-version", "", "A valid ECS platform version.")
-	fs.StringVar(&ecs_public_ip, "ecs-public-ip", "", "A valid ECS public IP string.")
+	fs.StringVar(&ecs_launch_type, "ecs-launch-type", "FARGATE", "A valid ECS launch type.")
+	fs.StringVar(&ecs_platform, "ecs-platform-version", "1.4.0", "A valid ECS platform version.")
+	fs.StringVar(&ecs_public_ip, "ecs-public-ip", "ENABLED", "A valid ECS public IP string.")
 	fs.Var(&ecs_subnets, "ecs-subnet", "One or more subnets to run your ECS task in.")
 	fs.Var(&ecs_security_groups, "ecs-security-group", "A valid AWS security group to run your task under.")
+	fs.StringVar(&ecs_task_command, "ecs-task-command", "/bin/index.sh -R -r {repo}", "")
 
-	fs.StringVar(&ecs_task_command, "ecs-task-command", "/bin/update.sh -R -r {repo}", "")
+	fs.BoolVar(&dryrun, "dryrun", false, "Go through the motions but do not launch any indexing tasks.")
 	flagset.Parse(fs)
 
 	err := flagset.SetFlagsFromEnvVars(fs, "WHOSONFIRST")
@@ -127,14 +129,18 @@ func main() {
 			task_cmd := strings.Replace(ecs_task_command, "{repo}", name, -1)
 			cmd := strings.Split(task_cmd, " ")
 
-			log.Println(task_opts, cmd)
-			continue
-
-			_, err := ecs.LaunchTask(ctx, svc, task_opts, cmd...)
+			if dryrun {
+				log.Printf("[dryrun] %s (%s) %s\n", task_opts.Task, task_opts.Container, task_cmd)
+				continue
+			}
+			
+			task_rsp, err := ecs.LaunchTask(ctx, svc, task_opts, cmd...)
 
 			if err != nil {
 				return fmt.Errorf("Failed to launch ECS task for %s, %w", name, err)
 			}
+
+			log.Printf("Launched task %s for %s with ARNS %s\n", task_opts.Task, name, strings.Join(task_rsp.Tasks, ","))
 		}
 
 		return nil
