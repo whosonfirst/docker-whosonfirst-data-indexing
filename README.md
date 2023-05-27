@@ -8,7 +8,7 @@ Tools for indexing `whosonfirst-data` repositories using containers.
 
 Dockerfile to build a container used to determine all the `whosonfirst-data` repositories that have been updated since a specific time and then, for each repository, launch an ECS task to index that repository in zero or more targets using the `updated.sh` tool. This tool is configured by the use of a `update.sh.env` file. Both files are expected to be found in the `bin` folder of this repository and are copied to the final container.
 
-_ Note that equivalent functionality is provided by the [update/cmd/update](update/cmd/update) tool described below which can either be run from the command line or as a Lambda function. This may be easier and/or cheaper than spinning up entire ECS instances to check for changes and invoking subsequent ECS tasks._
+_Note that equivalent functionality is provided by the [update/cmd/update](update/cmd/update) tool described below which can either be run from the command line or as a Lambda function. This may be easier and/or cheaper than spinning up entire ECS instances to check for changes and invoking subsequent ECS tasks._
 
 #### update.sh.env
 
