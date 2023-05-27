@@ -1,4 +1,4 @@
-# docker-whosonfirst-data-index
+# whosonfirst-data-indexing
 
 Tools for indexing `whosonfirst-data` repositories using containers.
 
@@ -7,6 +7,8 @@ Tools for indexing `whosonfirst-data` repositories using containers.
 ### Dockerfile.updates
 
 Dockerfile to build a container used to determine all the `whosonfirst-data` repositories that have been updated since a specific time and then, for each repository, launch an ECS task to index that repository in zero or more targets using the `updated.sh` tool. This tool is configured by the use of a `update.sh.env` file. Both files are expected to be found in the `bin` folder of this repository and are copied to the final container.
+
+_ Note that equivalent functionality is provided by the [update/cmd/update](update/cmd/update) tool described below which can either be run from the command line or as a Lambda function. This may be easier and/or cheaper than spinning up entire ECS instances to check for changes and invoking subsequent ECS tasks._
 
 #### update.sh.env
 
@@ -62,7 +64,97 @@ This _should_ help to make the individual tools easier to maintain since it remo
 
 Note that anything credential-related (for example a GitHub API token) in a `.env` file is defined as a `gocloud.dev/runtimevar` URI. This prevents the _need_ to include sensitive data in these configuration files or the containers that invoke them. If you need to include sensitive data inline (or just don't care) you can always use the `constant://` URI scheme. For example `GITHUB_TOKEN="constant://?val=s33kret"`.
 
+## Command line (and Lambda) tools
+
+```
+$> cd update
+$> make cli
+go build -mod vendor -ldflags="-s -w" -o bin/update cmd/update/main.go
+```
+
+### update
+
+Fetch the list of respostories updated since (n) and launch an ECS task for each one.
+
+```
+$> ./bin/update  -h
+  -aws-session-uri string
+    	A valid aaronland/go-aws-session URI string.
+  -dryrun
+    	Go through the motions but do not launch any indexing tasks.
+  -ecs-cluster string
+    	The name of your ECS cluster.
+  -ecs-container string
+    	The name of your ECS container.
+  -ecs-launch-type string
+    	A valid ECS launch type. (default "FARGATE")
+  -ecs-platform-version string
+    	A valid ECS platform version. (default "1.4.0")
+  -ecs-public-ip string
+    	A valid ECS public IP string. (default "ENABLED")
+  -ecs-security-group value
+    	A valid AWS security group to run your task under.
+  -ecs-subnet value
+    	One or more subnets to run your ECS task in.
+  -ecs-task string
+    	The name (and version) of your ECS task.
+  -ecs-task-command string
+    	 (default "/usr/local/bin/index.sh -R -r {repo}")
+  -github-access-token-uri string
+    	A valid gocloud.dev/runtimevar URI that dereferences to a GitHub API access token.
+  -github-organization string
+    	The GitHub organization to poll for recently updated repositories. (default "whosonfirst-data")
+  -github-prefix value
+    	Zero or more prefixes to filter repositories by (must match).
+  -github-updated-since string
+    	A valid ISO-8601 duration string. (default "PT24H")
+  -mode string
+    	Valid options are: cli, lambda (default "cli")
+```
+
+For example:
+
+```
+$> ./bin/update \
+	-dryrun -aws-session-uri 'aws://?region={REGION}&credentials={CREDENTIALS}' \
+	-ecs-container whosonfirst-data-indexing \
+	-github-prefix whosonfirst-data \
+	-github-updated-since P14D
+	
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-al
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-as
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-at
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-be
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-bg
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-ch
+2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-cy
+... and so on
+```
+
+For details on the syntax and format of the `-aws-session-uri` flag consult the documentation for [aaronland/go-aws-session](https://github.com/aaronland/go-aws-session#credentials).
+
+#### Lambda
+
+```
+$> make lambda
+if test -f main; then rm -f main; fi
+if test -f update.zip; then rm -f update.zip; fi
+GOOS=linux go build -mod vendor -ldflags="-s -w" -o main cmd/update/main.go
+zip update.zip main
+  adding: main (deflated 71%)
+rm -f main
+```
+
+Flags to the Lambda function are defined as environment variables. The names of environment variables are derived from the command line flag equivalents. The rules for mapping flags to environment variables are:
+
+* Flag names are upper-cased.
+* "-" symbols in flag names are replaced by "_".
+* Environment variables are prefixed with "WHOSONFIRST_".
+
+For example the `-github-updated-since` flag would be the `WHOSONFIRST_GITHUB_UPDATED_SINCE` environment variable.
+
 #### See also
 
 * https://gocloud.dev/runtimevar
 * https://github.com/sfomuseum/runtimevar
+* https://github.com/aaronland/go-aws-session

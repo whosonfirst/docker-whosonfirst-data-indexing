@@ -4,6 +4,10 @@
 # is configured by the use of a `update.sh.env` file. Both files are expected to be found in the
 # `bin` folder of this repository and are copied to the final container.
 
+# Note that equivalent functionality is provided by the `update/cmd/update` tool which can
+# either be run from the command line or as a Lambda function. This may be easier and/or cheaper
+# than spinning up entire ECS instances to check for changes and invoking subsequent ECS tasks.
+
 # https://github.com/whosonfirst/go-whosonfirst-github
 # https://github.com/aaronland/go-aws-ecs
 
