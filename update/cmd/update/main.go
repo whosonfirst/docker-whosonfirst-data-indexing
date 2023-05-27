@@ -58,7 +58,7 @@ func main() {
 	fs.StringVar(&ecs_public_ip, "ecs-public-ip", "ENABLED", "A valid ECS public IP string.")
 	fs.Var(&ecs_subnets, "ecs-subnet", "One or more subnets to run your ECS task in.")
 	fs.Var(&ecs_security_groups, "ecs-security-group", "A valid AWS security group to run your task under.")
-	fs.StringVar(&ecs_task_command, "ecs-task-command", "/bin/index.sh -R -r {repo}", "")
+	fs.StringVar(&ecs_task_command, "ecs-task-command", "/usr/local/bin/index.sh -R -r {repo}", "")
 
 	fs.BoolVar(&dryrun, "dryrun", false, "Go through the motions but do not launch any indexing tasks.")
 	flagset.Parse(fs)
