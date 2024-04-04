@@ -22,7 +22,6 @@ if [ "${INDEX_ALL}" = "1" ]
 then
     INDEX_MYSQL=1
     INDEX_ELASTICSEARCH=1
-    INDEX_S3=1    
 fi
 
 DRYRUN=""
@@ -82,9 +81,6 @@ then
     BIN="${UTIL}/${OS}"
 
     # TODO: Ensure BIN exists
-
-    echo "Local indexing is specified, disabling S3 indexing"
-    INDEX_S3=""
 fi
 
 if [ "${INDEX_ELASTICSEARCH}" = "1" ]
@@ -119,7 +115,6 @@ then
 fi
 
 LIST_REPOS="${BIN}/wof-list-repos"
-S3_SYNC="${BIN}/wof-s3-sync"
 
 
 MYSQL_INDEX="${BIN}/wof-mysql-index"
@@ -208,20 +203,6 @@ do
     fi
     
     echo "index ${REPO_PATH} in '${MODE}' mode, reading from ${INDEX}"
-
-    # S3
-    
-    if [ "${INDEX_S3}" = "1" ]
-    then	
-	
-	echo ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${MODE} ${INDEX}
-	
-	if [ "${DRYRUN}" = "" ]
-	then
-	    ${S3_SYNC} -verbose -dsn "${S3_DSN}" -mode ${MODE} ${INDEX}
-	fi
-	
-    fi
 
     # Elasticsearch
     

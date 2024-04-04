@@ -5,7 +5,7 @@
 
 # First build Go tools
 
-FROM golang:1.20-alpine as gotools
+FROM golang:1.22-alpine as gotools
 
 RUN mkdir /build
 
@@ -18,27 +18,38 @@ RUN apk update && apk upgrade \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-clone-repos cmd/wof-clone-repos/main.go \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-list-repos cmd/wof-list-repos/main.go \           
     #
-    && cd /build \
-    && git clone https://github.com/whosonfirst/go-whosonfirst-s3.git \
-    && cd go-whosonfirst-s3 \       	
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-s3-sync cmd/wof-s3-sync/main.go \
+    # Not actually used... but maybe some day?
     #
     && cd /build \
     && git clone https://github.com/whosonfirst/go-whosonfirst-mysql.git \
     && cd go-whosonfirst-mysql \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-mysql-index cmd/wof-mysql-index/main.go \
     #
+    # Deprecated - Spelunker v1
+    #
     && cd /build \
     && git clone https://github.com/sfomuseum/go-whosonfirst-elasticsearch.git \
     && cd go-whosonfirst-elasticsearch \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es-whosonfirst-index cmd/es-whosonfirst-index/main.go \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es2-whosonfirst-index cmd/es2-whosonfirst-index/main.go \        
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es2-whosonfirst-index cmd/es2-whosonfirst-index/main.go \
+    #
+    # The new new (WIP) – Spelunker v2
+    #
+    && cd /build \
+    && git clone https://github.com/whosonfirst/go-whosonfirst-opensearch.git \
+    && cd go-whosonfirst-opensearch \
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-opensearch-index cmd/wof-opensearch-index/main.go \
     #
     && cd /build \
     && git clone https://github.com/sfomuseum/runtimevar.git \    
     && cd runtimevar \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/runtimevar cmd/runtimevar/main.go \
     #
+    && cd /build \
+    && git clone https://github.com/aaronland/go-aws-ecs.git \
+    && cd go-aws-ecs \       	
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/ecs-launch-task cmd/ecs-launch-task/main.go \
+    #    
     && cd && rm -rf /build 
     
 FROM alpine
@@ -46,17 +57,19 @@ FROM alpine
 RUN mkdir /usr/local/data
 
 RUN apk update && apk upgrade \
-    && apk add git python3 py-pip ca-certificates jq curl \
-    #
-    && pip install awscli
+    && apk add python3 git ca-certificates jq curl
 
 COPY --from=gotools /usr/local/bin/wof-list-repos /usr/bin
 COPY --from=gotools /usr/local/bin/wof-clone-repos /usr/bin
-COPY --from=gotools /usr/local/bin/wof-s3-sync /usr/bin
 COPY --from=gotools /usr/local/bin/wof-mysql-index /usr/bin
 COPY --from=gotools /usr/local/bin/es-whosonfirst-index /usr/bin
 COPY --from=gotools /usr/local/bin/es2-whosonfirst-index /usr/bin
+COPY --from=gotools /usr/local/bin/wof-opensearch-index /usr/bin
 COPY --from=gotools /usr/local/bin/runtimevar /usr/bin
+COPY --from=gotools /usr/local/bin/ecs-launch-task /usr/bin
 
 COPY bin/index.sh /usr/local/bin/
 COPY bin/index.sh.env /usr/local/bin/
+
+COPY bin/update.sh /usr/local/bin/
+COPY bin/update.sh.env /usr/local/bin/
