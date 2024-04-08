@@ -1,13 +1,10 @@
 #!/bin/sh
 
-# This could – and should – be replaced by a single application written in Go which could
-# be run from the command line or as a Lambda function invoked as an EventBridge action.
+# See also: ../update/cmd/update/main.go which does the same thing and can be run as a Lambda function.
 
 # https://github.com/whosonfirst/docker-whosonfirst-data-indexing/issues/4
 
-PYTHON=`which python3`
-
-WHOAMI=`${PYTHON} -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' $0`
+WHOAMI=`realpath $0`
 FNAME=`basename $WHOAMI`
 ROOT=`dirname $WHOAMI`
 

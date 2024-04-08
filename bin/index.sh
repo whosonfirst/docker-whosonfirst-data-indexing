@@ -1,9 +1,7 @@
 #!/bin/sh
 # -*-sh-*-
 
-PYTHON=`which python3`
-
-WHOAMI=`${PYTHON} -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' $0`
+WHOAMI=`realpath $0`
 FNAME=`basename $WHOAMI`
 ROOT=`dirname $WHOAMI`
 
@@ -73,8 +71,6 @@ fi
 															
 if [ "${LOCAL}" = "1" ] 
 then
-    PYTHON=`which python`
-    WHOAMI=`${PYTHON} -c 'import os, sys; print os.path.realpath(sys.argv[1])' $0`
     BIN=`dirname $WHOAMI`
     ROOT=`dirname ${BIN}`
     UTIL="${ROOT}/util"
@@ -109,17 +105,17 @@ then
     MYSQL_DSN="${MYSQL_CREDS}@tcp("${MYSQL_HOST}")/${MYSQL_DATABASE}?maxAllowedPacket=0"
     
     MYSQL_USER=`echo ${MYSQL_CREDS} | awk -F ':' '{ print $1 }'`
-    
     MYSQL_DSN_DEBUG="${MYSQL_USER}:...@tcp("${MYSQL_HOST}")/${MYSQL_DATABASE}?maxAllowedPacket=0"
 
 fi
 
 LIST_REPOS="${BIN}/wof-list-repos"
 
-
 MYSQL_INDEX="${BIN}/wof-mysql-index"
 
-# Note the "es2-" which is necessary until we migrate the Spelunker over to ES 7.x
+# Note: The "es2-" which is necessary until we migrate the Spelunker over to ES 7.x
+# Note: We are not, in fact, migrating the Spelunker to ES 7.x but rather to OpenSearch 2.x which requires its own set of
+# 	tools but the point remains the same. Until the migration is complete we need to use the `es2-` tools.
 ES_INDEX_TOOL="${BIN}/es2-whosonfirst-index"
 
 # ensure tools exist here...

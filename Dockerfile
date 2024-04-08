@@ -30,7 +30,6 @@ RUN apk update && apk upgrade \
     && cd /build \
     && git clone https://github.com/sfomuseum/go-whosonfirst-elasticsearch.git \
     && cd go-whosonfirst-elasticsearch \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es-whosonfirst-index cmd/es-whosonfirst-index/main.go \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es2-whosonfirst-index cmd/es2-whosonfirst-index/main.go \
     #
     # The new new (WIP) – Spelunker v2
@@ -57,12 +56,11 @@ FROM alpine
 RUN mkdir /usr/local/data
 
 RUN apk update && apk upgrade \
-    && apk add python3 git ca-certificates jq curl
+    && apk add git ca-certificates jq curl
 
 COPY --from=gotools /usr/local/bin/wof-list-repos /usr/bin
 COPY --from=gotools /usr/local/bin/wof-clone-repos /usr/bin
 COPY --from=gotools /usr/local/bin/wof-mysql-index /usr/bin
-COPY --from=gotools /usr/local/bin/es-whosonfirst-index /usr/bin
 COPY --from=gotools /usr/local/bin/es2-whosonfirst-index /usr/bin
 COPY --from=gotools /usr/local/bin/wof-opensearch-index /usr/bin
 COPY --from=gotools /usr/local/bin/runtimevar /usr/bin

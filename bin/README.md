@@ -9,9 +9,7 @@ Basically, there are enough different flags and enough details that shouldn't be
 Instead, we are using an alternative approach to pull in `.env` files with defaults at runtime. These files are explicitly excluded from source control. For example:
 
 ```
-PYTHON=`which python`
-
-WHOAMI=`${PYTHON} -c 'import os, sys; print os.path.realpath(sys.argv[1])' $0`
+WHOAMI=`realpath $0`
 FNAME=`basename $WHOAMI`
 
 # Pull in defaults from .env file

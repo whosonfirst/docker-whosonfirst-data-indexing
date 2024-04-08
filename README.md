@@ -4,34 +4,25 @@ Tools for indexing `whosonfirst-data` repositories using containers.
 
 ## Docker
 
-### Dockerfile.updates
-
-Dockerfile to build a container used to determine all the `whosonfirst-data` repositories that have been updated since a specific time and then, for each repository, launch an ECS task to index that repository in zero or more targets using the `updated.sh` tool. This tool is configured by the use of a `update.sh.env` file. Both files are expected to be found in the `bin` folder of this repository and are copied to the final container.
-
-_Note that equivalent functionality is provided by the [update/cmd/update](update/cmd/update) tool described below which can either be run from the command line or as a Lambda function. This may be easier and/or cheaper than spinning up entire ECS instances to check for changes and invoking subsequent ECS tasks._
-
-#### update.sh.env
-
-_TBW. For now consult [bin/update.sh.env.example](bin/update.sh.env.example)_
-
-#### See also
-
-* https://github.com/whosonfirst/go-whosonfirst-github
-* https://github.com/aaronland/go-aws-ecs
-
-### Dockerfile.index
-
 Dockerfile to build a container used to index a specific `whosonfirst-data` repository using the `index.sh` tool. This tool is configured by the use of a `index.sh.env` file. Both files are expected to be found in the `bin` folder of this repository and are copied to the final container.
+
+### index.sh
+
+Index one or more Who's On First repositories in to one or more target environments (databases).
 
 #### index.sh.env
 
 _TBW. For now consult [bin/update.sh.env.example](bin/index.sh.env.example)_
 
-#### See also
+### update.sh
 
-* https://github.com/sfomuseum/go-whosonfirst-elasticsearch
-* https://github.com/whosonfirst/go-whosonfirst-s3
-* https://github.com/whosonfirst/go-whosonfirst-mysql
+Determine all the `whosonfirst-data` repositories that have been updated since a specific time and then, for each repository, launch an ECS task to index that repository in zero or more targets using the `updated.sh` tool. This tool is configured by the use of a `update.sh.env` file. Both files are expected to be found in the `bin` folder of this repository and are copied to the final container.
+
+_Note that equivalent functionality is provided by the [update/cmd/update](update/cmd/update) tool described below which can either be run from the command line or as a Lambda function. This is assumed to be easier and/or cheaper than spinning up entire ECS instances to check for changes and invoking subsequent ECS tasks._
+
+#### update.sh.env
+
+_TBW. For now consult [bin/update.sh.env.example](bin/update.sh.env.example)_
 
 ### *.env files
 
@@ -42,9 +33,7 @@ Basically, there are enough different flags and enough details that shouldn't be
 Instead, we are using an alternative approach to pull in `.env` files with defaults at runtime. These files are explicitly excluded from source control. For example:
 
 ```
-PYTHON=`which python`
-
-WHOAMI=`${PYTHON} -c 'import os, sys; print os.path.realpath(sys.argv[1])' $0`
+WHOAMI=`realpath $0`
 FNAME=`basename $WHOAMI`
 
 # Pull in defaults from .env file
@@ -137,12 +126,12 @@ For details on the syntax and format of the `-aws-session-uri` flag consult the 
 
 ```
 $> make lambda
-if test -f main; then rm -f main; fi
+if test -f bootstrap; then rm -f bootstrap; fi
 if test -f update.zip; then rm -f update.zip; fi
-GOOS=linux go build -mod vendor -ldflags="-s -w" -o main cmd/update/main.go
-zip update.zip main
-  adding: main (deflated 71%)
-rm -f main
+GOARCH=arm64 GOOS=linux go build -mod vendor -ldflags="-s -w" -tags lambda.norpc -o bootstrap cmd/update/main.go
+zip update.zip bootstrap
+  adding: bootstrap (deflated 75%)
+rm -f bootstrap
 ```
 
 Flags to the Lambda function are defined as environment variables. The names of environment variables are derived from the command line flag equivalents. The rules for mapping flags to environment variables are:
@@ -153,8 +142,10 @@ Flags to the Lambda function are defined as environment variables. The names of 
 
 For example the `-github-updated-since` flag would be the `WHOSONFIRST_GITHUB_UPDATED_SINCE` environment variable.
 
-#### See also
+## See also
 
+* https://github.com/whosonfirst/go-whosonfirst-github
+* https://github.com/aaronland/go-aws-ecs
 * https://gocloud.dev/runtimevar
 * https://github.com/sfomuseum/runtimevar
 * https://github.com/aaronland/go-aws-session
