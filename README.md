@@ -63,6 +63,8 @@ go build -mod vendor -ldflags="-s -w" -o bin/update cmd/update/main.go
 
 ### update
 
+_Note: This tool has been deprecated and will be removed shortly. You should use the more generic `wof-launch-task` command in the [whosonfirst/go-whosonfirst-aws](https://github.com/whosonfirst/go-whosonfirst-aws?tab=readme-ov-file#wof-launch-task) package instead._
+
 Fetch the list of respostories updated since (n) and launch an ECS task for each one.
 
 ```
