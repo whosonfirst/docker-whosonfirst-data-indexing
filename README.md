@@ -55,99 +55,14 @@ Note that anything credential-related (for example a GitHub API token) in a `.en
 
 ## Command line (and Lambda) tools
 
-```
-$> cd update
-$> make cli
-go build -mod vendor -ldflags="-s -w" -o bin/update cmd/update/main.go
-```
-
 ### update
 
-_Note: This tool has been deprecated and will be removed shortly. You should use the more generic `wof-launch-task` command in the [whosonfirst/go-whosonfirst-aws](https://github.com/whosonfirst/go-whosonfirst-aws?tab=readme-ov-file#wof-launch-task) package instead._
-
-Fetch the list of respostories updated since (n) and launch an ECS task for each one.
-
-```
-$> ./bin/update  -h
-  -aws-session-uri string
-    	A valid aaronland/go-aws-session URI string.
-  -dryrun
-    	Go through the motions but do not launch any indexing tasks.
-  -ecs-cluster string
-    	The name of your ECS cluster.
-  -ecs-container string
-    	The name of your ECS container.
-  -ecs-launch-type string
-    	A valid ECS launch type. (default "FARGATE")
-  -ecs-platform-version string
-    	A valid ECS platform version. (default "1.4.0")
-  -ecs-public-ip string
-    	A valid ECS public IP string. (default "ENABLED")
-  -ecs-security-group value
-    	A valid AWS security group to run your task under.
-  -ecs-subnet value
-    	One or more subnets to run your ECS task in.
-  -ecs-task string
-    	The name (and version) of your ECS task.
-  -ecs-task-command string
-    	 (default "/usr/local/bin/index.sh -R -r {repo}")
-  -github-access-token-uri string
-    	A valid gocloud.dev/runtimevar URI that dereferences to a GitHub API access token.
-  -github-organization string
-    	The GitHub organization to poll for recently updated repositories. (default "whosonfirst-data")
-  -github-prefix value
-    	Zero or more prefixes to filter repositories by (must match).
-  -github-updated-since string
-    	A valid ISO-8601 duration string. (default "PT24H")
-  -mode string
-    	Valid options are: cli, lambda (default "cli")
-```
-
-For example:
-
-```
-$> ./bin/update \
-	-dryrun -aws-session-uri 'aws://?region={REGION}&credentials={CREDENTIALS}' \
-	-ecs-container whosonfirst-data-indexing \
-	-github-prefix whosonfirst-data \
-	-github-updated-since P14D
-	
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-al
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-as
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-at
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-be
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-bg
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-ch
-2023/05/27 14:10:37 [dryrun]  (whosonfirst-data-indexing) /usr/local/bin/index.sh -R -r whosonfirst-data-admin-cy
-... and so on
-```
-
-For details on the syntax and format of the `-aws-session-uri` flag consult the documentation for [aaronland/go-aws-session](https://github.com/aaronland/go-aws-session#credentials).
-
-#### Lambda
-
-```
-$> make lambda
-if test -f bootstrap; then rm -f bootstrap; fi
-if test -f update.zip; then rm -f update.zip; fi
-GOARCH=arm64 GOOS=linux go build -mod vendor -ldflags="-s -w" -tags lambda.norpc -o bootstrap cmd/update/main.go
-zip update.zip bootstrap
-  adding: bootstrap (deflated 75%)
-rm -f bootstrap
-```
-
-Flags to the Lambda function are defined as environment variables. The names of environment variables are derived from the command line flag equivalents. The rules for mapping flags to environment variables are:
-
-* Flag names are upper-cased.
-* "-" symbols in flag names are replaced by "_".
-* Environment variables are prefixed with "WHOSONFIRST_".
-
-For example the `-github-updated-since` flag would be the `WHOSONFIRST_GITHUB_UPDATED_SINCE` environment variable.
+_Note: This tool has been deprecated and has been removed. You should use the more generic `wof-launch-task` command in the [whosonfirst/go-whosonfirst-aws](https://github.com/whosonfirst/go-whosonfirst-aws?tab=readme-ov-file#wof-launch-task) package instead._
 
 ## See also
 
 * https://github.com/whosonfirst/go-whosonfirst-github
-* https://github.com/aaronland/go-aws-ecs
+* https://github.com/whosonfirst/go-whosonfirst-aws
 * https://gocloud.dev/runtimevar
 * https://github.com/sfomuseum/runtimevar
 * https://github.com/aaronland/go-aws-session
