@@ -28,8 +28,9 @@ CUSTOM_REPOS=""
 LOCAL="${LOCAL:=}"
 REFRESH="${REFRESH:=}"
 DO_NOT_CLONE="${DO_NOT_CLONE:=}"
+GIT_OFFSET=1
 
-while getopts "r:hnLRX" opt; do
+while getopts "o:r:hnLRX" opt; do
     case "$opt" in
 	h )
 	    USAGE=1
@@ -45,6 +46,9 @@ while getopts "r:hnLRX" opt; do
 	    ;;
 	R )
 	    REFRESH=1
+	    ;;
+	o )
+	    GIT_OFFSET=$OPTARG
 	    ;;
 	X )
 	    DO_NOT_CLONE=1
@@ -190,11 +194,13 @@ do
 	INDEX="${REPO_PATH}"
     else
 
-	echo "${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX}"
-
+	# echo "${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX}"
+	echo "${GIT} diff --name-only HEAD~${GIT_OFFSET} | grep geojson > ${INDEX}"
+	
 	if [ "${DRYRUN}" = "" ]
 	then
-	    ${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX}
+	    # ${GIT} log --name-only --pretty=format:'' HEAD^..HEAD > ${INDEX}
+	    ${GIT} diff --name-only HEAD~${GIT_OFFSET} | grep geojson > ${INDEX}	    
 	fi
     fi
     

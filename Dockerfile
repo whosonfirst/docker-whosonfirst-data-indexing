@@ -10,46 +10,46 @@ FROM golang:1.22-alpine as gotools
 RUN mkdir /build
 
 RUN apk update && apk upgrade \
-    && apk add git make gcc libc-dev \
-    #
-    && cd /build \
+    && apk add git make gcc libc-dev
+
+RUN cd /build \
     && git clone https://github.com/whosonfirst/go-whosonfirst-github.git \
     && cd go-whosonfirst-github \
     && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-clone-repos cmd/wof-clone-repos/main.go \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-list-repos cmd/wof-list-repos/main.go \           
-    #
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-list-repos cmd/wof-list-repos/main.go
+
     # Not actually used... but maybe some day?
-    #
-    && cd /build \
+
+RUN cd /build \
     && git clone https://github.com/whosonfirst/go-whosonfirst-mysql.git \
     && cd go-whosonfirst-mysql \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-mysql-index cmd/wof-mysql-index/main.go \
-    #
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-mysql-index cmd/wof-mysql-index/main.go
+
     # Deprecated - Spelunker v1
-    #
-    && cd /build \
+
+RUN cd /build \
     && git clone https://github.com/sfomuseum/go-whosonfirst-elasticsearch.git \
     && cd go-whosonfirst-elasticsearch \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es2-whosonfirst-index cmd/es2-whosonfirst-index/main.go \
-    #
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/es2-whosonfirst-index cmd/es2-whosonfirst-index/main.go
+
     # The new new (WIP) – Spelunker v2
-    #
-    && cd /build \
+
+RUN cd /build \
     && git clone https://github.com/whosonfirst/go-whosonfirst-opensearch.git \
     && cd go-whosonfirst-opensearch \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-opensearch-index cmd/wof-opensearch-index/main.go \
-    #
-    && cd /build \
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/wof-opensearch-index cmd/wof-opensearch-index/main.go
+
+RUN cd /build \
     && git clone https://github.com/sfomuseum/runtimevar.git \    
     && cd runtimevar \
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/runtimevar cmd/runtimevar/main.go \
-    #
-    && cd /build \
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/runtimevar cmd/runtimevar/main.go
+
+RUN cd /build \
     && git clone https://github.com/aaronland/go-aws-ecs.git \
     && cd go-aws-ecs \       	
-    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/ecs-launch-task cmd/ecs-launch-task/main.go \
-    #    
-    && cd && rm -rf /build 
+    && go build -mod vendor -ldflags="-s -w" -o /usr/local/bin/ecs-launch-task cmd/ecs-launch-task/main.go
+
+RUN cd / && rm -rf /build 
     
 FROM alpine
 
